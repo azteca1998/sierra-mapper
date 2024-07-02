@@ -1,5 +1,6 @@
 use self::{libfuncs::map_libfuncs, types::map_types};
 use cairo_lang_sierra::{debug_info::DebugInfo, program::Program};
+use num_bigint::BigUint;
 use smol_str::ToSmolStr;
 use std::collections::HashMap;
 use tracing::{debug, warn};
@@ -7,8 +8,12 @@ use tracing::{debug, warn};
 mod libfuncs;
 mod types;
 
-pub fn map(program: &mut Program, function_names: &HashMap<u64, String>) {
-    let user_func_names = function_names
+pub fn map(
+    program: &mut Program,
+    type_mappings: HashMap<BigUint, String>,
+    function_mappings: HashMap<u64, String>,
+) {
+    let user_func_names = function_mappings
         .iter()
         .filter_map(|(&id, name)| {
             let fn_mapping = program
@@ -25,7 +30,7 @@ pub fn map(program: &mut Program, function_names: &HashMap<u64, String>) {
         })
         .collect();
 
-    let type_names = map_types(program, &user_func_names);
+    let type_names = map_types(program, &user_func_names, type_mappings.into());
     let libfunc_names = map_libfuncs(program, &user_func_names, &type_names);
 
     let debug_info = DebugInfo {

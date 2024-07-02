@@ -7,13 +7,14 @@ use cairo_lang_sierra::{
 use num_bigint::BigUint;
 use smol_str::{SmolStr, ToSmolStr};
 use std::{collections::HashMap, sync::LazyLock};
-use tracing::debug;
+use tracing::{debug, warn};
 
 static TUPLE_TYPE_ID: LazyLock<BigUint> = LazyLock::new(|| UserTypeId::from_string("Tuple").id);
 
 pub fn map_types(
     program: &Program,
     func_names: &HashMap<FunctionId, SmolStr>,
+    mut type_mappings: HashMap<BigUint, String>,
 ) -> HashMap<ConcreteTypeId, SmolStr> {
     debug!("Topologically sorting the Sierra types.");
     let type_declarations = &program.type_declarations;
@@ -59,10 +60,14 @@ pub fn map_types(
                         format!("Tuple<{generic_args}>")
                     }
                 } else {
-                    id.debug_name
-                        .as_deref()
-                        .map(str::to_string)
-                        .unwrap_or_else(|| format!("ut@{id}"))
+                    match type_mappings.remove(&id.id) {
+                        Some(name) => name,
+                        None => id
+                            .debug_name
+                            .as_deref()
+                            .map(str::to_string)
+                            .unwrap_or_else(|| format!("ut@{id}")),
+                    }
                 }
             }
             _ => {
@@ -78,6 +83,10 @@ pub fn map_types(
         };
 
         memory.insert(type_declarations[idx].id.clone(), name.to_smolstr());
+    }
+
+    for id in type_mappings.into_keys() {
+        warn!("Type with id {id} doesn't exist. This mapping will be ignored.")
     }
 
     memory
