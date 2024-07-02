@@ -2,6 +2,7 @@ use self::{libfuncs::map_libfuncs, types::map_types};
 use cairo_lang_sierra::{debug_info::DebugInfo, program::Program};
 use smol_str::ToSmolStr;
 use std::collections::HashMap;
+use tracing::{debug, warn};
 
 mod libfuncs;
 mod types;
@@ -13,10 +14,17 @@ pub fn map(program: &mut Program, function_names: &HashMap<u64, String>) {
     let user_func_names = function_names
         .iter()
         .filter_map(|(&id, name)| {
-            program
+            let fn_mapping = program
                 .funcs
                 .iter()
-                .find_map(|f| (f.id.id == id).then(|| (f.id.clone(), name.to_smolstr())))
+                .find_map(|f| (f.id.id == id).then(|| (f.id.clone(), name.to_smolstr())));
+
+            match &fn_mapping {
+                Some((_, name)) => debug!("Mapping function {id} to '{name}'."),
+                None => warn!("Function with id {id} doesn't exist. This mapping will be ignored."),
+            }
+
+            fn_mapping
         })
         .collect();
 

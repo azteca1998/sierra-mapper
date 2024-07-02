@@ -7,10 +7,12 @@ use cairo_lang_sierra::{
 use num_bigint::BigUint;
 use smol_str::{SmolStr, ToSmolStr};
 use std::{collections::HashMap, sync::LazyLock};
+use tracing::debug;
 
 static TUPLE_TYPE_ID: LazyLock<BigUint> = LazyLock::new(|| UserTypeId::from_string("Tuple").id);
 
 pub fn map_types(program: &Program) -> HashMap<ConcreteTypeId, SmolStr> {
+    debug!("Topologically sorting the Sierra types.");
     let type_declarations = &program.type_declarations;
     let sorted_type_declarations = get_topological_ordering(
         true,
@@ -38,6 +40,7 @@ pub fn map_types(program: &Program) -> HashMap<ConcreteTypeId, SmolStr> {
     )
     .unwrap();
 
+    debug!("Generating names for all declared types.");
     let mut memory = HashMap::<ConcreteTypeId, SmolStr>::new();
     for StatementIdx(idx) in sorted_type_declarations {
         let long_id = &type_declarations[idx].long_id;

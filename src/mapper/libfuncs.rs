@@ -5,11 +5,13 @@ use cairo_lang_sierra::{
 };
 use smol_str::{SmolStr, ToSmolStr};
 use std::collections::HashMap;
+use tracing::debug;
 
 pub fn map_libfuncs(
     program: &Program,
     type_names: &HashMap<ConcreteTypeId, SmolStr>,
 ) -> HashMap<ConcreteLibfuncId, SmolStr> {
+    debug!("Generating names for all declared libfuncs.");
     program
         .libfunc_declarations
         .iter()
