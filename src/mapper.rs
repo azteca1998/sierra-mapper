@@ -8,9 +8,6 @@ mod libfuncs;
 mod types;
 
 pub fn map(program: &mut Program, function_names: &HashMap<u64, String>) {
-    let type_names = map_types(program);
-    let libfunc_names = map_libfuncs(program, &type_names);
-
     let user_func_names = function_names
         .iter()
         .filter_map(|(&id, name)| {
@@ -27,6 +24,9 @@ pub fn map(program: &mut Program, function_names: &HashMap<u64, String>) {
             fn_mapping
         })
         .collect();
+
+    let type_names = map_types(program, &user_func_names);
+    let libfunc_names = map_libfuncs(program, &user_func_names, &type_names);
 
     let debug_info = DebugInfo {
         type_names,

@@ -1,7 +1,7 @@
 use crate::utils::format_generic_args;
 use cairo_lang_sierra::{
     algorithm::topological_order::get_topological_ordering,
-    ids::{ConcreteTypeId, UserTypeId},
+    ids::{ConcreteTypeId, FunctionId, UserTypeId},
     program::{GenericArg, Program, StatementIdx},
 };
 use num_bigint::BigUint;
@@ -11,7 +11,10 @@ use tracing::debug;
 
 static TUPLE_TYPE_ID: LazyLock<BigUint> = LazyLock::new(|| UserTypeId::from_string("Tuple").id);
 
-pub fn map_types(program: &Program) -> HashMap<ConcreteTypeId, SmolStr> {
+pub fn map_types(
+    program: &Program,
+    func_names: &HashMap<FunctionId, SmolStr>,
+) -> HashMap<ConcreteTypeId, SmolStr> {
     debug!("Topologically sorting the Sierra types.");
     let type_declarations = &program.type_declarations;
     let sorted_type_declarations = get_topological_ordering(
@@ -47,7 +50,8 @@ pub fn map_types(program: &Program) -> HashMap<ConcreteTypeId, SmolStr> {
         let name = match long_id.generic_args.first() {
             Some(GenericArg::UserType(id)) => {
                 if long_id.generic_id.0 == "Struct" && id.id == *TUPLE_TYPE_ID {
-                    let generic_args = format_generic_args(&memory, &long_id.generic_args);
+                    let generic_args =
+                        format_generic_args(&memory, func_names, &long_id.generic_args);
 
                     if generic_args.is_empty() {
                         "Unit".to_string()
@@ -63,7 +67,7 @@ pub fn map_types(program: &Program) -> HashMap<ConcreteTypeId, SmolStr> {
             }
             _ => {
                 let generic_name = long_id.generic_id.0.as_str();
-                let generic_args = format_generic_args(&memory, &long_id.generic_args);
+                let generic_args = format_generic_args(&memory, func_names, &long_id.generic_args);
 
                 if generic_args.is_empty() {
                     generic_name.to_string()
