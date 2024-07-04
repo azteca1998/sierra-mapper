@@ -30,7 +30,7 @@ pub fn map(
         })
         .collect();
 
-    let type_names = map_types(program, &user_func_names, type_mappings.into());
+    let type_names = map_types(program, &user_func_names, type_mappings);
     let libfunc_names = map_libfuncs(program, &user_func_names, &type_names);
 
     let debug_info = DebugInfo {

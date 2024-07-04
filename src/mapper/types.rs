@@ -57,7 +57,7 @@ pub fn map_types(
                     if generic_args.is_empty() {
                         "Unit".to_string()
                     } else {
-                        format!("Tuple<{generic_args}>")
+                        format!("({generic_args})")
                     }
                 } else {
                     match type_mappings.remove(&id.id) {
