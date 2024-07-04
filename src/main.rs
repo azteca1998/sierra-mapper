@@ -19,7 +19,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     tracing::subscriber::set_global_default(
         FmtSubscriber::builder()
-            .with_env_filter(EnvFilter::from_default_env().add_directive(LevelFilter::WARN.into()))
+            .with_env_filter(
+                EnvFilter::builder()
+                    .with_default_directive(LevelFilter::WARN.into())
+                    .from_env_lossy(),
+            )
+            .with_writer(io::stderr)
             .finish(),
     )?;
 
