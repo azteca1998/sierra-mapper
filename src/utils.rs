@@ -2,7 +2,7 @@ use cairo_lang_sierra::{
     ids::{ConcreteTypeId, FunctionId},
     program::GenericArg,
 };
-use cairo_lang_starknet_classes::abi::Contract;
+use cairo_lang_starknet_classes::{contract_class::ContractClass, keccak::starknet_keccak};
 use itertools::Itertools;
 use num_bigint::BigUint;
 use smol_str::SmolStr;
@@ -28,17 +28,36 @@ pub fn format_generic_args(
     .collect::<String>()
 }
 
-pub fn _extract_contract_abi(
-    contract_abi: Contract,
+pub fn extract_contract_abi(
+    contract_class: ContractClass,
 ) -> (HashMap<BigUint, String>, HashMap<u64, String>) {
+    let contract_abi = match contract_class.abi {
+        Some(contract_abi) => contract_abi,
+        None => return (HashMap::new(), HashMap::new()),
+    };
+
+    let mut type_names = HashMap::new();
+    let mut function_names = HashMap::new();
     for abi_item in contract_abi {
         match abi_item {
             cairo_lang_starknet_classes::abi::Item::Function(function_abi) => {
-                eprintln!("{function_abi:#?}")
+                let selector = starknet_keccak(function_abi.name.as_bytes());
+                let function_idx = contract_class
+                    .entry_points_by_type
+                    .external
+                    .iter()
+                    .find_map(|entry_point| {
+                        (entry_point.selector == selector).then_some(entry_point.function_idx)
+                    })
+                    .unwrap();
+
+                function_names.insert(function_idx as u64, function_abi.name);
             }
             cairo_lang_starknet_classes::abi::Item::Constructor(_) => todo!(),
             cairo_lang_starknet_classes::abi::Item::L1Handler(_) => todo!(),
-            cairo_lang_starknet_classes::abi::Item::Event(_) => todo!(),
+            cairo_lang_starknet_classes::abi::Item::Event(_) => {
+                // TODO: Handle events.
+            },
             cairo_lang_starknet_classes::abi::Item::Struct(_) => todo!(),
             cairo_lang_starknet_classes::abi::Item::Enum(_) => todo!(),
             cairo_lang_starknet_classes::abi::Item::Interface(_) => todo!(),
@@ -46,5 +65,5 @@ pub fn _extract_contract_abi(
         }
     }
 
-    todo!()
+    (type_names, function_names)
 }

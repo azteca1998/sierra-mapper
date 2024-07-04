@@ -36,7 +36,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     };
 
-    let (mut program, _contract_class) = if program_data.trim_start().starts_with('{') {
+    let (mut program, contract_class) = if program_data.trim_start().starts_with('{') {
         info!("Parsing the Starknet contract");
         let contract_class = serde_json::from_str::<ContractClass>(&program_data)?;
         let program = contract_class.extract_sierra_program()?;
@@ -51,15 +51,23 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         (program, None)
     };
 
-    // if let Some(contract_abi) = contract_class.and_then(|contract_class| contract_class.abi) {
-    //     utils::extract_contract_abi(contract_abi);
-    // }
+    let (type_mappings, function_mappings) = match contract_class {
+        Some(contract_class) => {
+            let (mut type_mappings, mut function_mappings) =
+                utils::extract_contract_abi(contract_class);
 
-    self::mapper::map(
-        &mut program,
-        args.type_names.into_iter().collect(),
-        args.function_names.into_iter().collect(),
-    );
+            type_mappings.extend(args.type_names);
+            function_mappings.extend(args.function_names);
+
+            (type_mappings, function_mappings)
+        }
+        None => (
+            args.type_names.into_iter().collect(),
+            args.function_names.into_iter().collect(),
+        ),
+    };
+
+    self::mapper::map(&mut program, type_mappings, function_mappings);
     println!("{program}");
 
     Ok(())
