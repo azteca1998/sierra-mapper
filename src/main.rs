@@ -2,6 +2,7 @@ mod mapper;
 mod utils;
 
 use cairo_lang_sierra::ProgramParser;
+use cairo_lang_starknet_classes::contract_class::ContractClass;
 use clap::Parser;
 use num_bigint::BigUint;
 use std::{
@@ -35,10 +36,24 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     };
 
-    info!("Parsing the Sierra program");
-    let mut program = ProgramParser::new()
-        .parse(&program_data)
-        .map_err(|e| e.to_string())?;
+    let (mut program, _contract_class) = if program_data.trim_start().starts_with('{') {
+        info!("Parsing the Starknet contract");
+        let contract_class = serde_json::from_str::<ContractClass>(&program_data)?;
+        let program = contract_class.extract_sierra_program()?;
+
+        (program, Some(contract_class))
+    } else {
+        info!("Parsing the Sierra program");
+        let program = ProgramParser::new()
+            .parse(&program_data)
+            .map_err(|e| e.to_string())?;
+
+        (program, None)
+    };
+
+    // if let Some(contract_abi) = contract_class.and_then(|contract_class| contract_class.abi) {
+    //     utils::extract_contract_abi(contract_abi);
+    // }
 
     self::mapper::map(
         &mut program,
@@ -53,7 +68,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// Sierra program deobfuscator.
 #[derive(Debug, Parser)]
 struct CmdArgs {
-    /// Sierra program to deobfuscate.
+    /// Sierra program or contract to deobfuscate.
     pub input: Option<PathBuf>,
 
     /// Provide names for user functions.
