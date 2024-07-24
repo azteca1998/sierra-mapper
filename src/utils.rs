@@ -20,7 +20,12 @@ pub fn format_generic_args(
                 GenericArg::UserType(_) => None,
                 GenericArg::Type(ty) => Some(type_names[ty].to_string()),
                 GenericArg::Value(val) => Some(val.to_string()),
-                GenericArg::UserFunc(r#fn) => func_names.get(r#fn).map(SmolStr::to_string),
+                GenericArg::UserFunc(r#fn) => Some(
+                    func_names
+                        .get(r#fn)
+                        .map(SmolStr::to_string)
+                        .unwrap_or_else(|| format!("@{}", r#fn.id)),
+                ),
                 GenericArg::Libfunc(_) => unreachable!(),
             }),
         || ", ".to_string(),
@@ -57,7 +62,7 @@ pub fn extract_contract_abi(
             cairo_lang_starknet_classes::abi::Item::L1Handler(_) => todo!(),
             cairo_lang_starknet_classes::abi::Item::Event(_) => {
                 // TODO: Handle events.
-            },
+            }
             cairo_lang_starknet_classes::abi::Item::Struct(_) => todo!(),
             cairo_lang_starknet_classes::abi::Item::Enum(_) => todo!(),
             cairo_lang_starknet_classes::abi::Item::Interface(_) => todo!(),
