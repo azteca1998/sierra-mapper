@@ -1,10 +1,8 @@
-mod mapper;
-mod utils;
-
 use cairo_lang_sierra::ProgramParser;
 use cairo_lang_starknet_classes::contract_class::ContractClass;
 use clap::Parser;
 use num_bigint::BigUint;
+use sierra_mapper::{mapper, utils};
 use std::{
     fs,
     io::{self, Read},
